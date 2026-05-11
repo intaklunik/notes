@@ -54,6 +54,85 @@ target:
 - If target's commands are on different lines, they are executed in different shells.
  
 ## Kbuild
+- **Kbuild** - build system for Linux kernel, a set of Makefiles and scripts.
+Starting point of Kbuild system is Makefile located in the root directory of the kernel build tree. For currently running kernel the path is ```/lib/modules/`uname -r`/build```.
+- **Kbuild Makefiles** - Makefiles with predefined Kbuild variables/macros/flags for building your target. Name can be "Kbuild" or "Makefile" (Kbuild build system will search first for the name "Kbuild", then for "Makefile").  
+### Definitions
+- **in-tree** - kernel code is located in kernel source tree. Can be compiled as a dynamically loadable module or built into the kernel image.
+- **out-of-tree** - kernel code is located in external directory and built separately from the kernel source tree.
+- **built-in** - kernel code linked directly into the kernel image, always in-tree.  
+
+|Concept|Meaning|
+|-------|-------|
+|in-tree/out-of-tree|source location|
+|obj-m/obj-y|build type|
+|module/built-in|runtime loading behavior|
+
+### Make Usage
+```make [flags] [command-line arguments] [targets]```
+
+- **Flags** are regular Make flags.  
+- **Command-line arguments** can be Kbuild environment variables or options. Options override corresponding environment variables.
+- **Targets** - Make targets predefined by Kbuild.
+#### Flags   
+- **-C** *dir* - ```cd dir && make```. Used when building external modules to specify path to Kbuild.
+- **-f** *file* - use *file* as a Makefile. Instead of going to the kbuild dir and search for a Makefile, this flag directly specifies Makefile that should be used.  
+
+#### Environment Variables
+From [documentation](https://docs.kernel.org/kbuild/kbuild.html#environment-variables)
+- **KBUILD_VERBOSE** - enable verbose mode (1 - all, 2 - reason for rebuild the target)
+- **KBUILD_EXTMOD** - set the directory to look for the kernel source when building external modules.
+- **KBUILD_OUTPUT** - specify the output directory when building the kernel. This variable can also be used to point to the kernel output directory when building external modules against a pre-built kernel in a separate build directory. Please note that this does NOT specify the output directory for the external modules themselves. (Use KBUILD_EXTMOD_OUTPUT for that purpose.)
+- **KBUILD_EXTMOD_OUTPUT** - specify the output directory for external modules.
+- **ARCH** - build for a specific architecture. In most cases the name of the architecture is the same as the directory name found in the arch/ directory.
+- **CROSS_COMPILE** - specify an optional fixed part of the binutils filename. Can be a part of the filename or the full path.
+
+Full list of Kbuild environment variables see [here](https://docs.kernel.org/kbuild/kbuild.html#environment-variables).
+
+#### Options
+- **V** overrides KBUILD_VERBOSE
+- **W** overrides [KBUILD_EXTRA_WARN](https://docs.kernel.org/kbuild/kbuild.html#kbuild-extra-warn)
+- **O** overrides KBUILD_OUTPUT
+- **M** overrides KBUILD_EXTMOD. Required for building external modules.
+- **MO** overrides KBUILD_EXTMOD_OUTPUT. Optional.
+
+#### Targets
+- **help** - list the available targets.
+- **modules** - build all modules, with option M - build all modules in an external dir.
+- **modules_install** - install all modules, with option M - install only modules from the specified external module directory.
+- **clean**
+
+### Kbuild File
+The main part of Kbuild file is **goals**. Goal is a predefined variable that represents how your code should be built (built-in, module, lib). Also Kbuild file may contain addition configurations like compilation flags and so on.
+#### Goals
+- **obj-y** - for built-in kernel code, becomes part of vmlinux 
+- **obj-m** - for modules which can be loaded dynamically, ```obj-m += module-name.o```
+- [**lib-y**](https://docs.kernel.org/kbuild/makefiles.html#library-file-goals-lib-y)
+#### Variables
+- **$(\<module_name\>-y)** - list of object files linked together into a composite module object.
+- **ccflags-y** - specifies options for compiling with $(CC).
+- **$(src)** is the directory where the Makefile is located. Always use $(src) when referring to files located in the src tree.
+
+### Out-of-tree/External modules
+From [Linux documentation](https://docs.kernel.org/kbuild/modules.html#command-syntax):  
+>The command to build an external module is:  
+```shell 
+$ make -C <path_to_kernel_dir> M=$PWD
+```  
+>Starting from Linux 6.13, you can use the -f option instead of -C. This will avoid unnecessary change of the working directory. The external module will be output to the directory where you invoke make.  
+```shell
+$ make -f /lib/modules/`uname -r`/build/Makefile M=$PWD
+```  
+
+### Summary
+
+|Build mode|Kbuild entry|Result|
+|----------|------------|------|
+|make M=$(PATH) + obj-m|out-of-tree|external loadable .ko|
+|make + obj-m|	in-tree|in-tree loadable .ko|
+|make + obj-y|	in-tree|built into vmlinux|
+|make M=$(PATH) + obj-y||??|
+
 ## CMake
 ## ESP-IDF
 
